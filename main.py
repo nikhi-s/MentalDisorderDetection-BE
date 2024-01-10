@@ -126,8 +126,8 @@ async def create_item(item_id: int, text: str = Form(...)):
   print("Model_generated_response",model_generated_text)
   return {
     "item_id": item_id,
-    "response_text": response_text,
-    "predictions": predictions
+    "response_text": model_generated_text,
+    "predictions": prediction
   }
 
 @app.get("/items/{item_id}", response_model=dict)
@@ -139,6 +139,6 @@ def read_item(item_id: int, text: Optional[str] = None):
   print("Model_generated_response",model_generated_text)
   return {
     "item_id": item_id,
-    "response_text": response_text,
-    "predictions": predictions
+    "response_text": model_generated_text,
+    "predictions": prediction
   }
