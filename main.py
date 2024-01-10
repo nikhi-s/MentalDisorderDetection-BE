@@ -4,28 +4,6 @@ from fastapi import FastAPI
 
 import requests
 
-from huggingface_hub import notebook_login
-
-api_token = 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
-# Login to the Hugging Face Model Hub with the provided token
-notebook_login(api_token=api_token)
-
-from datasets import load_dataset
-import datasets
-
-#raw_datasets = load_dataset("nikilas/reddit_depression", use_auth_token=True)
-raw_datasets = load_dataset("nikilas/DepressionIncludingImageText", use_auth_token=True)
-#Split the dataset into training, validation abd test datasets
-train_testvalid = raw_datasets['train'].train_test_split(train_size=0.7, seed=42)
-# Split the 30% (test + valid) in half test, half valid
-test_valid = train_testvalid['test'].train_test_split(train_size=0.5, seed=42)
-# gather everyone if you want to have a single DatasetDict
-raw_datasets = datasets.DatasetDict({
-    'train': train_testvalid['train'],
-    'test': test_valid['test'],
-    'val': test_valid['train']})
-print("Splits available in the DatasetDict:", raw_datasets.keys())
-
 import os
 os.environ["REPLICATE_API_TOKEN"] = r8_IIHG7hbkTN0No13c5QcwxqKPIQYidDu1kZitY
 
