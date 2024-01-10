@@ -141,11 +141,11 @@ async def root():
     return {"message": "Hello World"}
 
 @app.get("/items/{item_id}")
-def read_item(item_id: int, q: Optional[str] = None):
+def read_item(item_id: int, text: Optional[str] = None):
     models = ["mistralai/mixtral-8x7b-instruct-v0.1:7b3212fbaf88310cfef07a061ce94224e82efc8403c26fc67e8f6c065de51f21"]
     for index, modelname in enumerate(models):
         # Process model_output to get the prediction of depression
-        model_generated_text,prediction = depr_fn_new(modelname,q,"No image file provided")
+        model_generated_text,prediction = depr_fn_new(modelname,text,"No image file provided")
         print("Prediction",prediction)
         print("Model_generated_response",model_generated_text)
     return {"item_id": item_id, "response text": model_generated_text,"Prediction",}
