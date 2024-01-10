@@ -1,16 +1,13 @@
 from typing import Optional
-
-from fastapi import FastAPI
-
+from fastapi import FastAPI, Form
 import requests
-
 import os
 import replicate
+import re
+
 #token for replicate
 #r8_IIHG7hbkTN0No13c5QcwxqKPIQYidDu1kZitY(paid)
 os.environ["REPLICATE_API_TOKEN"] = "r8_IIHG7hbkTN0No13c5QcwxqKPIQYidDu1kZitY"
-
-import re
 
 def check_depression(local_generated_text,local_text_message):
 
