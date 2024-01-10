@@ -37,7 +37,6 @@ def check_depression(local_generated_text,local_text_message):
   # Extract the first word
   first_word = trimmed_text.split()[0].lower()  # Convert to lowercase for case-insensitive comparison
   #print(f"First word: {first_word}")
-  log_file.write(f"\nFirst word: {first_word}")  
   first_word_trimmed = re.sub(r'^[\s\W]+|[\s\W]+$', '', first_word)
   
   # Check if the first word is 'yes' or 'no'
