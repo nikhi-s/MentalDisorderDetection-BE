@@ -1,1 +1,3 @@
 fastapi[all]
+!pip install replicate
+!pip -q install datasets
