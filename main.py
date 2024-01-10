@@ -148,4 +148,4 @@ def read_item(item_id: int, text: Optional[str] = None):
         model_generated_text,prediction = depr_fn_new(modelname,text,"No image file provided")
         print("Prediction",prediction)
         print("Model_generated_response",model_generated_text)
-    return {"item_id": item_id, "response text": model_generated_text,"Prediction",}
+    return {"item_id": item_id, "response_text": model_generated_text,"Prediction": prediction}
