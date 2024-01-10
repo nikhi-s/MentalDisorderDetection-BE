@@ -112,7 +112,7 @@ Required Response Format: Please provide a 'yes' or 'no' answer, followed by a b
   # Print the message content
   print(message_content)'''
 
-  isdepressed = check_depression(generated_text,prompt_text,log_file)
+  isdepressed = check_depression(generated_text,prompt_text)
   return generated_text, isdepressed
 
 app = FastAPI()
