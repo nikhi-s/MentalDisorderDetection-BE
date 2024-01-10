@@ -5,7 +5,7 @@ from fastapi import FastAPI
 import requests
 
 import os
-os.environ["REPLICATE_API_TOKEN"] = r8_IIHG7hbkTN0No13c5QcwxqKPIQYidDu1kZitY
+os.environ["REPLICATE_API_TOKEN"] = "r8_IIHG7hbkTN0No13c5QcwxqKPIQYidDu1kZitY"
 
 import re
 
