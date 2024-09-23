@@ -6,8 +6,7 @@ import replicate
 import re
 
 #token for replicate
-#r8_IIHG7hbkTN0No13c5QcwxqKPIQYidDu1kZitY(paid)
-os.environ["REPLICATE_API_TOKEN"] = "r8_IIHG7hbkTN0No13c5QcwxqKPIQYidDu1kZitY"
+os.environ["REPLICATE_API_TOKEN"] = "replace your token"
 
 def check_depression(local_generated_text,local_text_message):
 
