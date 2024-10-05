@@ -26,13 +26,20 @@ def get_replicate_client():
 
 def image_to_text(image: bytes) -> str:
     """Function to convert image to text using the LLAVA model."""
-    # Convert bytes to base64 string
-    image_base64 = base64.b64encode(image).decode('utf-8')
-    output = replicate.run(
-        LLAVA_MODEL_NAME,
-        input={"image": image_base64}
-    )
-    return output
+    try:
+        image_base64 = base64.b64encode(image).decode('utf-8')
+        output = replicate.run(
+            LLAVA_MODEL_NAME,
+            input={"image": image_base64}
+        )
+        return output
+    except ReplicateError as e:
+        if e.status == 402:
+            logger.error("Billing required for Replicate API. Please set up billing at https://replicate.com/account/billing#billing")
+            raise HTTPException(status_code=500, detail="Server configuration error: Replicate API billing not set up")
+        else:
+            logger.error(f"Replicate API error: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error processing image with Replicate API")
 
 def check_depression(local_generated_text: str, local_text_message: str) -> int:
   if not REPLICATE_API_TOKEN:
@@ -180,6 +187,8 @@ async def create_item(item_id: int, text: str = Form(...), image: UploadFile = F
             "response_text": model_generated_text,
             "predictions": prediction
         }
+    except HTTPException as http_exc:
+        raise http_exc
     except Exception as e:
         logger.error(f"Error processing item {item_id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"An error occurred while processing the request: {str(e)}")
@@ -220,6 +229,8 @@ async def get_item(item_id: int, text: str = Form(...), image: UploadFile = File
             "response_text": model_generated_text,
             "predictions": prediction
         }
+    except HTTPException as http_exc:
+        raise http_exc
     except Exception as e:
         logger.error(f"Error processing item {item_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="An error occurred while processing the request")
