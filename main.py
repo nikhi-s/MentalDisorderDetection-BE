@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, Form, Depends, HTTPException
+from fastapi import FastAPI, Form, Depends, HTTPException, UploadFile, File
 import replicate
 import logging
 from dotenv import load_dotenv
@@ -142,7 +142,7 @@ def get_replicate_client():
     return replicate
 
 @app.post("/items/{item_id}", response_model=dict)
-async def create_item(item_id: int, text: str = Form(...), image: UploadFile = File(...), replicate_client: replicate = Depends(get_replicate_client)):
+async def create_item(item_id: int, text: str = Form(...), image: UploadFile = File(...), replicate_client: Optional[replicate] = Depends(get_replicate_client)):
     if not text.strip():
         raise HTTPException(status_code=400, detail="Text input cannot be empty")
     try:
@@ -171,7 +171,7 @@ async def create_item(item_id: int, text: str = Form(...), image: UploadFile = F
         raise HTTPException(status_code=500, detail="An error occurred while processing the request")    
     
 @app.get("/items/{item_id}", response_model=dict)
-async def get_item(item_id: int, text: str = Form(...), image: UploadFile = File(...), replicate_client: replicate = Depends(get_replicate_client)):
+async def get_item(item_id: int, text: str = Form(...), image: UploadFile = File(...), replicate_client: Optional[replicate] = Depends(get_replicate_client)):
     if not text.strip():
         raise HTTPException(status_code=400, detail="Text input cannot be empty")
     try:
