@@ -97,7 +97,7 @@ Required Response Format: Please provide a 'yes' or 'no' answer, followed by a b
       modelname,
       input={
           "prompt": prompt_text,
-          "max_new_tokens": MODEL_NAME
+          "max_new_tokens": MAX_NEW_TOKENS
           }
   )
 
