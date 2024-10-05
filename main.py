@@ -68,8 +68,13 @@ def image_to_text(image: bytes) -> str:
                 "prompt": prompt
             }
         )
-        logger.info(f"LLAVA model response: {output}")
-        return output
+
+        # Collect all output from the generator
+        full_output = "".join(list(output_generator))
+
+        logger.info(f"LLAVA model response: {full_output}")
+
+        return full_output
     except ReplicateError as e:
         if e.status == 402:
             logger.error("Billing required for Replicate API. Please set up billing at https://replicate.com/account/billing#billing")
@@ -158,11 +163,8 @@ Required Response Format: Please provide a 'yes' or 'no' answer, followed by a b
         }
     )
 
-    generated_text = ""
-    for item in output:
-        generated_text += item
-  
-    #print(f"generated_text: {generated_text}")
+    generated_text = "".join(list(output))  # Collect all output from the generator
+    print(f"generated_text: {generated_text}")
 
     '''response = OAI_client.chat.completions.create(
       messages=[
@@ -218,14 +220,18 @@ async def create_item(item_id: int, text: str = Form(...), image: UploadFile = F
         image_content = await image.read()  # Read the uploaded file content
 
         image_description = image_to_text(image_content)  # Get the text description of the image
-
-        model_generated_text, prediction = depr_fn_new(MIXTRAL_MODEL_NAME, text, image_description)        
+        logger.info(f"Image description: {image_description}")  # Log the image description
+        
+        model_generated_text, prediction = depr_fn_new(MIXTRAL_MODEL_NAME, text, image_description)
+        
         logger.info(f"Prediction: {prediction}")
         logger.info(f"Model generated response: {model_generated_text}")
+        
         return {
             "item_id": item_id,
             "response_text": model_generated_text,
-            "predictions": prediction
+            "predictions": prediction,
+            "image_description": image_description
         }
     except HTTPException as http_exc:
         raise http_exc
@@ -260,15 +266,20 @@ async def get_item(item_id: int, text: str = Form(...), image: UploadFile = File
         image_content = await image.read()  # Read the uploaded file content
 
         image_description = image_to_text(image_content)  # Get the text description of the image
-
-        model_generated_text, prediction = depr_fn_new(MIXTRAL_MODEL_NAME, text, image_description)        
+        logger.info(f"Image description: {image_description}")  # Log the image description
+        
+        model_generated_text, prediction = depr_fn_new(MIXTRAL_MODEL_NAME, text, image_description)
+        
         logger.info(f"Prediction: {prediction}")
         logger.info(f"Model generated response: {model_generated_text}")
+        
         return {
             "item_id": item_id,
             "response_text": model_generated_text,
-            "predictions": prediction
+            "predictions": prediction,
+            "image_description": image_description
         }
+
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
