@@ -3,7 +3,7 @@ Copyright (C) 2024 Nikila Swaminathan
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-#Instructions for Testing this code
+# Instructions for Testing this code
 
 Here's a step-by-step guide to set up your testing environment:
 1. Create and activate a virtual environment:
@@ -37,7 +37,7 @@ Remember to test both with and without the Replicate API token to ensure your ap
 This setup will allow you to thoroughly test your FastAPI application, including unit tests for individual functions and integration tests for the API endpoints.
 
 
-#Instruction to deploy this repo in the Render
+# Instruction to deploy this repo in the Render
 ## Deploy FastAPI on Render
 Use this repo as a template to deploy a Python [FastAPI](https://fastapi.tiangolo.com) service on Render.
 
