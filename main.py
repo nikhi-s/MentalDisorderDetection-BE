@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI, Form, Depends, HTTPException, UploadFile, File
 import replicate
+from replicate.exceptions import ReplicateError 
 import logging
 from dotenv import load_dotenv
 import re
@@ -30,13 +31,19 @@ def image_to_text(image: bytes) -> str:
         image_base64 = base64.b64encode(image).decode('utf-8')
         output = replicate.run(
             LLAVA_MODEL_NAME,
-            input={"image": image_base64}
+            input={
+                "image": f"data:image/jpeg;base64,{image_base64}",
+                "prompt": "Describe this image"  # Add a default prompt
+            }
         )
         return output
     except ReplicateError as e:
         if e.status == 402:
             logger.error("Billing required for Replicate API. Please set up billing at https://replicate.com/account/billing#billing")
             raise HTTPException(status_code=500, detail="Server configuration error: Replicate API billing not set up")
+        elif e.status == 422:
+            logger.error(f"Input validation failed: {e.detail}")
+            raise HTTPException(status_code=400, detail=f"Invalid input: {e.detail}")
         else:
             logger.error(f"Replicate API error: {str(e)}")
             raise HTTPException(status_code=500, detail="Error processing image with Replicate API")
@@ -232,5 +239,5 @@ async def get_item(item_id: int, text: str = Form(...), image: UploadFile = File
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
-        logger.error(f"Error processing item {item_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail="An error occurred while processing the request")
+        logger.error(f"Error processing item {item_id}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"An error occurred while processing the request: {str(e)}")
