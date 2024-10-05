@@ -1,5 +1,6 @@
 import os
 from fastapi import FastAPI, Form, Depends, HTTPException, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
 import replicate
 from replicate.exceptions import ReplicateError 
 import logging
@@ -18,6 +19,17 @@ MIXTRAL_MODEL_NAME = "mistralai/mixtral-8x7b-instruct-v0.1:7b3212fbaf88310cfef07
 REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://mental-disorder-detection-frontend.onrender.com",
+        "http://localhost:5173"  # If you want to allow requests from your local development server
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def get_replicate_client():
     if not REPLICATE_API_TOKEN:
@@ -61,7 +73,7 @@ def image_to_text(image: bytes) -> str:
 
         Provide a comprehensive description that could be used by mental health professionals to gain insights into the individual's emotional state and potential mental health concerns. Be objective and avoid making definitive diagnoses.
         """
-        output = replicate.run(
+        '''output = replicate.run(
             LLAVA_MODEL_NAME,
             input={
                 "image": f"data:image/jpeg;base64,{image_base64}",
@@ -70,8 +82,8 @@ def image_to_text(image: bytes) -> str:
         )
 
         # Collect all output from the generator
-        full_output = "".join(list(output))
-
+        full_output = "".join(list(output))'''
+        full_output = "The image is a selfie of a man wearing a white tank top, sitting in a chair in a room. He appears to be looking at the camera with a somewhat serious expression on his face. The room has a bed and a bookshelf with several books on it. The man's posture and facial expression suggest that he might be feeling contemplative or focused on something. The presence of the bed and bookshelf indicates that this is a personal living space, which could provide context for the man's emotional state. The overall atmosphere of the image seems to be calm and introspective, but without more information, it is difficult to determine any specific mental health concerns"
         logger.info(f"LLAVA model response: {full_output}")
 
         return full_output
