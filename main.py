@@ -70,7 +70,7 @@ def image_to_text(image: bytes) -> str:
         )
 
         # Collect all output from the generator
-        full_output = "".join(list(output_generator))
+        full_output = "".join(list(output))
 
         logger.info(f"LLAVA model response: {full_output}")
 
