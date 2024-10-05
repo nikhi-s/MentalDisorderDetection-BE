@@ -1,11 +1,15 @@
-# Deploy FastAPI on Render
+MentalDisorderDetetion is licensed under the GNU General Public License v3.0.
+Copyright (C) 2024 Nikila Swaminathan
 
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+
+Instruction to deploy this repo in the Render
+# Deploy FastAPI on Render
 Use this repo as a template to deploy a Python [FastAPI](https://fastapi.tiangolo.com) service on Render.
 
 See https://render.com/docs/deploy-fastapi or follow the steps below:
-
 ## Manual Steps
-
 1. You may use this repository directly or [create your own repository from this template](https://github.com/render-examples/fastapi/generate) if you'd like to customize the code.
 2. Create a new Web Service on Render.
 3. Specify the URL to your new repository or this repository.
