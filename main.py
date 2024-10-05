@@ -25,9 +25,11 @@ def get_replicate_client():
 
 def image_to_text(image: bytes) -> str:
     """Function to convert image to text using the LLAVA model."""
+    # Convert bytes to base64 string
+    image_base64 = base64.b64encode(image).decode('utf-8')
     output = replicate.run(
         LLAVA_MODEL_NAME,
-        input={"image": image}
+        input={"image": image_base64}
     )
     return output
 
@@ -178,8 +180,8 @@ async def create_item(item_id: int, text: str = Form(...), image: UploadFile = F
             "predictions": prediction
         }
     except Exception as e:
-        logger.error(f"Error processing item {item_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail="An error occurred while processing the request")    
+        logger.error(f"Error processing item {item_id}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"An error occurred while processing the request: {str(e)}")
     
 @app.get("/items/{item_id}", response_model=dict)
 async def get_item(item_id: int, text: str = Form(...), image: UploadFile = File(...), replicate_client: Optional[replicate] = Depends(get_replicate_client)):
