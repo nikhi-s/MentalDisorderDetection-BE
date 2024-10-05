@@ -3,6 +3,8 @@ from fastapi import FastAPI, Form, Depends, HTTPException
 import replicate
 import logging
 from dotenv import load_dotenv
+import re
+from typing import Optional
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
