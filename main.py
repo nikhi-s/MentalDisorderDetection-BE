@@ -29,13 +29,46 @@ def image_to_text(image: bytes) -> str:
     """Function to convert image to text using the LLAVA model."""
     try:
         image_base64 = base64.b64encode(image).decode('utf-8')
+        prompt = """
+        Analyze this image in detail, focusing on elements that might be relevant to mental health assessment. Consider the following:
+
+        1. Image type: Is this a selfie, a photo of a person, or another type of image?
+
+        2. If people are present:
+           - Facial expressions and emotions conveyed
+           - Body language and posture
+           - Overall appearance and self-presentation
+           - Any signs of stress, fatigue, or mood indicators
+
+        3. If it's not a photo of a person:
+           - Describe the main elements of the image
+           - Analyze the mood or atmosphere of the image
+           - Identify any symbols or themes that might relate to mental state
+
+        4. Environmental context:
+           - Describe the setting (if visible)
+           - Note any unusual or significant elements in the environment
+
+        5. Color palette and lighting:
+           - Describe the overall color scheme and lighting
+           - Consider how these might relate to mood or emotional state
+
+        6. Any text or writing in the image:
+           - Transcribe and interpret any visible text
+
+        7. Overall impression:
+           - Provide your interpretation of what this image might convey about the mental or emotional state of the person who chose to share it
+
+        Provide a comprehensive description that could be used by mental health professionals to gain insights into the individual's emotional state and potential mental health concerns. Be objective and avoid making definitive diagnoses.
+        """
         output = replicate.run(
             LLAVA_MODEL_NAME,
             input={
                 "image": f"data:image/jpeg;base64,{image_base64}",
-                "prompt": "Describe this image"  # Add a default prompt
+                "prompt": prompt
             }
         )
+        logger.info(f"LLAVA model response: {output}")
         return output
     except ReplicateError as e:
         if e.status == 402:
@@ -129,7 +162,7 @@ Required Response Format: Please provide a 'yes' or 'no' answer, followed by a b
     for item in output:
         generated_text += item
   
-    print(f"generated_text: {generated_text}")
+    #print(f"generated_text: {generated_text}")
 
     '''response = OAI_client.chat.completions.create(
       messages=[
