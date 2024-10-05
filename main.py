@@ -11,8 +11,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 MAX_NEW_TOKENS = 250
-MODEL_NAME = "mistralai/mixtral-8x7b-instruct-v0.1:7b3212fbaf88310cfef07a061ce94224e82efc8403c26fc67e8f6c065de51f21"
-
+LLAVA_MODEL_NAME = "yorickvp/llava-13b:80537f9eead1a5bfa72d5ac6ea6414379be41d4d4f6679fd776e9535d1eb58bb"  # Replace with the LLAVA model name
+MIXTRAL_MODEL_NAME = "mistralai/mixtral-8x7b-instruct-v0.1:7b3212fbaf88310cfef07a061ce94224e82efc8403c26fc67e8f6c065de51f21"
 REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 
 app = FastAPI()
@@ -22,6 +22,14 @@ def get_replicate_client():
         logger.warning("REPLICATE_API_TOKEN is not set. Replicate functionality will be limited.")
         return None
     return replicate
+
+def image_to_text(image: bytes) -> str:
+    """Function to convert image to text using the LLAVA model."""
+    output = replicate.run(
+        LLAVA_MODEL_NAME,
+        input={"image": image}
+    )
+    return output
 
 def check_depression(local_generated_text: str, local_text_message: str) -> int:
   if not REPLICATE_API_TOKEN:
@@ -66,9 +74,8 @@ def check_depression(local_generated_text: str, local_text_message: str) -> int:
   #print(f"Is the poster depressed? {is_depressed}")  
   return is_depressed
 
-def depr_fn_new(modelname: str, post_text: str, image2text: str) -> tuple[str, int]:
-
-  '''prompt_text = "Given a text post from depression-related subreddits on Reddit, provide a probability score indicating the likelihood that the poster is experiencing depression. \
+def depr_fn_new(modelname: str, post_text: str, image2text: str) -> tuple[str, int]:    
+    '''prompt_text = "Given a text post from depression-related subreddits on Reddit, provide a probability score indicating the likelihood that the poster is experiencing depression. \
                 Additionally, include any relevant keywords or phrases from the post that contribute to this assessment. Please also provide an explanation for the prediction. \
                 Post : " +truncated_text+"\
                 Image Description:\
@@ -79,7 +86,7 @@ def depr_fn_new(modelname: str, post_text: str, image2text: str) -> tuple[str, i
                 Required Response Format: Please provide a 'yes' or 'no' answer, followed by a brief explanation of the \
                 reasoning behind this conclusion."'''
 
-  prompt_text = """
+    prompt_text = """
 Social Media Post:
 
 {0}
@@ -93,21 +100,21 @@ Question: Based on the content of the above social media post and the associated
 Required Response Format: Please provide a 'yes' or 'no' answer, followed by a brief explanation of the reasoning behind this conclusion.
 """.format(post_text,image2text)
 
-  output = replicate.run(
-      modelname,
-      input={
+    output = replicate.run(
+        modelname,
+        input={
           "prompt": prompt_text,
           "max_new_tokens": MAX_NEW_TOKENS
-          }
-  )
+        }
+    )
 
-  generated_text = ""
-  for item in output:
-    generated_text += item
+    generated_text = ""
+    for item in output:
+        generated_text += item
   
-  print(f"generated_text: {generated_text}")
+    print(f"generated_text: {generated_text}")
 
-  '''response = OAI_client.chat.completions.create(
+    '''response = OAI_client.chat.completions.create(
       messages=[
           {
               "role": "user",
@@ -116,14 +123,14 @@ Required Response Format: Please provide a 'yes' or 'no' answer, followed by a b
           ],
       model="gpt-3.5-turbo",
       )
-  # Accessing the message
-  message_content = response.choices[0].message.content
+    # Accessing the message
+    message_content = response.choices[0].message.content
   
-  # Print the message content
-  print(message_content)'''
+    # Print the message content
+    print(message_content)'''
 
-  isdepressed = check_depression(generated_text,prompt_text)
-  return generated_text, isdepressed
+    isdepressed = check_depression(generated_text,prompt_text)
+    return generated_text, isdepressed
 
 app = FastAPI()
 
@@ -135,7 +142,7 @@ def get_replicate_client():
     return replicate
 
 @app.post("/items/{item_id}", response_model=dict)
-async def create_item(item_id: int, text: str = Form(...), replicate_client: replicate = Depends(get_replicate_client)):
+async def create_item(item_id: int, text: str = Form(...), image: UploadFile = File(...), replicate_client: replicate = Depends(get_replicate_client)):
     if not text.strip():
         raise HTTPException(status_code=400, detail="Text input cannot be empty")
     try:
@@ -145,7 +152,13 @@ async def create_item(item_id: int, text: str = Form(...), replicate_client: rep
                 "response_text": "Unable to process: Replicate API token not set",
                 "predictions": -1
             }
-        model_generated_text, prediction = depr_fn_new(MODEL_NAME, text, "No image file provided")
+        
+        # Process the image
+        image_content = await image.read()  # Read the uploaded file content
+
+        image_description = image_to_text(image_content)  # Get the text description of the image
+
+        model_generated_text, prediction = depr_fn_new(MIXTRAL_MODEL_NAME, text, image_description)        
         logger.info(f"Prediction: {prediction}")
         logger.info(f"Model generated response: {model_generated_text}")
         return {
@@ -158,11 +171,23 @@ async def create_item(item_id: int, text: str = Form(...), replicate_client: rep
         raise HTTPException(status_code=500, detail="An error occurred while processing the request")    
     
 @app.get("/items/{item_id}", response_model=dict)
-def read_item(item_id: int, text: Optional[str] = None):
-    if not text:
-        raise HTTPException(status_code=400, detail="Text input is required")
+async def get_item(item_id: int, text: str = Form(...), image: UploadFile = File(...), replicate_client: replicate = Depends(get_replicate_client)):
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="Text input cannot be empty")
     try:
-        model_generated_text, prediction = depr_fn_new(MODEL_NAME, text, "No image file provided")
+        if not replicate_client:
+            return {
+                "item_id": item_id,
+                "response_text": "Unable to process: Replicate API token not set",
+                "predictions": -1
+            }
+        
+        # Process the image
+        image_content = await image.read()  # Read the uploaded file content
+
+        image_description = image_to_text(image_content)  # Get the text description of the image
+
+        model_generated_text, prediction = depr_fn_new(MIXTRAL_MODEL_NAME, text, image_description)        
         logger.info(f"Prediction: {prediction}")
         logger.info(f"Model generated response: {model_generated_text}")
         return {
