@@ -1,3 +1,5 @@
 fastapi[all]
 replicate
 datasets
+uvicorn
+python-dotenv
