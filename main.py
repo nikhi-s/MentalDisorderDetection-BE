@@ -5,6 +5,7 @@ import logging
 from dotenv import load_dotenv
 import re
 from typing import Optional
+import base64 
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
