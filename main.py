@@ -1,15 +1,30 @@
-from typing import Optional
-from fastapi import FastAPI, Form
-import requests
 import os
+from fastapi import FastAPI, Form, Depends, HTTPException
 import replicate
-import re
+import logging
+from dotenv import load_dotenv
 
-#token for replicate
-os.environ["REPLICATE_API_TOKEN"] = "replace your token"
+load_dotenv()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def check_depression(local_generated_text,local_text_message):
+MAX_NEW_TOKENS = 250
+MODEL_NAME = "mistralai/mixtral-8x7b-instruct-v0.1:7b3212fbaf88310cfef07a061ce94224e82efc8403c26fc67e8f6c065de51f21"
 
+REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
+
+app = FastAPI()
+
+def get_replicate_client():
+    if not REPLICATE_API_TOKEN:
+        logger.warning("REPLICATE_API_TOKEN is not set. Replicate functionality will be limited.")
+        return None
+    return replicate
+
+def check_depression(local_generated_text: str, local_text_message: str) -> int:
+  if not REPLICATE_API_TOKEN:
+      logger.warning("REPLICATE_API_TOKEN is not set. Returning mock response.")
+      return "Mock response: Unable to process without Replicate API token", -1
   # Remove the input text from the generated text
   if local_generated_text.startswith(local_text_message):
       processed_text = local_generated_text[len(local_text_message):].strip()
@@ -49,9 +64,7 @@ def check_depression(local_generated_text,local_text_message):
   #print(f"Is the poster depressed? {is_depressed}")  
   return is_depressed
 
-def depr_fn_new(modelname,post_text,image2text):
-
-  max_words = 450  
+def depr_fn_new(modelname: str, post_text: str, image2text: str) -> tuple[str, int]:
 
   '''prompt_text = "Given a text post from depression-related subreddits on Reddit, provide a probability score indicating the likelihood that the poster is experiencing depression. \
                 Additionally, include any relevant keywords or phrases from the post that contribute to this assessment. Please also provide an explanation for the prediction. \
@@ -82,7 +95,7 @@ Required Response Format: Please provide a 'yes' or 'no' answer, followed by a b
       modelname,
       input={
           "prompt": prompt_text,
-          "max_new_tokens": 250
+          "max_new_tokens": MODEL_NAME
           }
   )
 
@@ -116,28 +129,45 @@ app = FastAPI()
 async def root():
     return {"message": "Hello World"}
 
-@app.post("/items/{item_id}", response_model=dict)
-async def create_item(item_id: int, text: str = Form(...)):
-  modelname = "mistralai/mixtral-8x7b-instruct-v0.1:7b3212fbaf88310cfef07a061ce94224e82efc8403c26fc67e8f6c065de51f21"
-  # Process model_output to get the prediction of depression
-  model_generated_text, prediction = depr_fn_new(modelname, text, "No image file provided")
-  print("Prediction",prediction)
-  print("Model_generated_response",model_generated_text)
-  return {
-    "item_id": item_id,
-    "response_text": model_generated_text,
-    "predictions": prediction
-  }
+def get_replicate_client():
+    return replicate
 
+@app.post("/items/{item_id}", response_model=dict)
+async def create_item(item_id: int, text: str = Form(...), replicate_client: replicate = Depends(get_replicate_client)):
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="Text input cannot be empty")
+    try:
+        if not replicate_client:
+            return {
+                "item_id": item_id,
+                "response_text": "Unable to process: Replicate API token not set",
+                "predictions": -1
+            }
+        model_generated_text, prediction = depr_fn_new(MODEL_NAME, text, "No image file provided")
+        logger.info(f"Prediction: {prediction}")
+        logger.info(f"Model generated response: {model_generated_text}")
+        return {
+            "item_id": item_id,
+            "response_text": model_generated_text,
+            "predictions": prediction
+        }
+    except Exception as e:
+        logger.error(f"Error processing item {item_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="An error occurred while processing the request")    
+    
 @app.get("/items/{item_id}", response_model=dict)
 def read_item(item_id: int, text: Optional[str] = None):
-  modelname = "mistralai/mixtral-8x7b-instruct-v0.1:7b3212fbaf88310cfef07a061ce94224e82efc8403c26fc67e8f6c065de51f21"
-  # Process model_output to get the prediction of depression
-  model_generated_text, prediction = depr_fn_new(modelname, text, "No image file provided")
-  print("Prediction",prediction)
-  print("Model_generated_response",model_generated_text)
-  return {
-    "item_id": item_id,
-    "response_text": model_generated_text,
-    "predictions": prediction
-  }
+    if not text:
+        raise HTTPException(status_code=400, detail="Text input is required")
+    try:
+        model_generated_text, prediction = depr_fn_new(MODEL_NAME, text, "No image file provided")
+        logger.info(f"Prediction: {prediction}")
+        logger.info(f"Model generated response: {model_generated_text}")
+        return {
+            "item_id": item_id,
+            "response_text": model_generated_text,
+            "predictions": prediction
+        }
+    except Exception as e:
+        logger.error(f"Error processing item {item_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="An error occurred while processing the request")
