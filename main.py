@@ -143,8 +143,19 @@ def get_replicate_client():
 
 @app.post("/items/{item_id}", response_model=dict)
 async def create_item(item_id: int, text: str = Form(...), image: UploadFile = File(...), replicate_client: Optional[replicate] = Depends(get_replicate_client)):
+    
+    logger.info(f"Received request for item_id: {item_id}")
+    logger.info(f"Text content: {text}")
+    logger.info(f"Image filename: {image.filename}")
+
     if not text.strip():
+        logger.warning("Empty text received")
         raise HTTPException(status_code=400, detail="Text input cannot be empty")
+    
+    if not image.filename:
+        logger.warning("No image file received")
+        raise HTTPException(status_code=400, detail="Image file is required")
+
     try:
         if not replicate_client:
             return {
@@ -172,8 +183,19 @@ async def create_item(item_id: int, text: str = Form(...), image: UploadFile = F
     
 @app.get("/items/{item_id}", response_model=dict)
 async def get_item(item_id: int, text: str = Form(...), image: UploadFile = File(...), replicate_client: Optional[replicate] = Depends(get_replicate_client)):
+
+    logger.info(f"Received request for item_id: {item_id}")
+    logger.info(f"Text content: {text}")
+    logger.info(f"Image filename: {image.filename}")
+
     if not text.strip():
+        logger.warning("Empty text received")
         raise HTTPException(status_code=400, detail="Text input cannot be empty")
+    
+    if not image.filename:
+        logger.warning("No image file received")
+        raise HTTPException(status_code=400, detail="Image file is required")
+
     try:
         if not replicate_client:
             return {
