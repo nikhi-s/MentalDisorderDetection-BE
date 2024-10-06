@@ -20,12 +20,20 @@ REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 
 app = FastAPI()
 
-app.add_middleware(
+'''app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://mental-disorder-detection-frontend.onrender.com",
         "http://localhost:5173"  # If you want to allow requests from your local development server
     ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)'''
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -210,14 +218,18 @@ async def simple_post(request: Request):
     logger.info(f"Request body: {body}")
     return {"message": "Simple POST request successful", "received_data": body}
 
+# Add this to handle OPTIONS requests
+@app.options("/simple-post")
+async def options_simple_post():
+    return {"message": "OK"}
+
 def get_replicate_client():
     return replicate
 
 @app.post("/items/{item_id}", response_model=dict)
 async def create_item(item_id: int, text: str = Form(...), image: UploadFile = File(...), replicate_client: Optional[replicate] = Depends(get_replicate_client)):
     
-    logger.info(f"Received POST request for item_id: {item_id}")
-    logger.info(f"Request headers: {request.headers}")
+    logger.info(f"Received POST request for item_id: {item_id}")    
     logger.info(f"Text content: {text}")
     logger.info(f"Image filename: {image.filename}")
 
