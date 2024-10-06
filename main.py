@@ -142,7 +142,7 @@ async def options_handler(request: Request):
             "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
         },
     )
-
+    
 @app.post("/items/{item_id}")
 async def create_item(
     item_id: int, 
@@ -188,15 +188,40 @@ async def create_item(
                 "depression_level": depression_level,
                 "image_description": image_description
             }
-
-        return JSONResponse(content=result)
+            
+            origin = request.headers.get("Origin") if request else None
+            if origin in origins:
+                return JSONResponse(
+                    content=result,
+                    headers={
+                        "Access-Control-Allow-Origin": origin,
+                        "Access-Control-Allow-Credentials": "true",
+                    },
+                )
+            else:
+                logger.warning(f"Received POST request from unauthorized origin: {origin}")
+                return JSONResponse(content={"message": "Unauthorized"}, status_code=403)
 
     except HTTPException as http_exc:
         logger.error(f"HTTP exception in create_item: {str(http_exc)}")
-        raise http_exc
+        return JSONResponse(
+            content={"detail": str(http_exc.detail)},
+            status_code=http_exc.status_code,
+            headers={
+                "Access-Control-Allow-Origin": origin if origin in origins else origins[0],
+                "Access-Control-Allow-Credentials": "true",
+            },
+        )
     except Exception as e:
         logger.error(f"Error processing item {item_id}: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"An error occurred while processing the request: {str(e)}")
+        return JSONResponse(
+            content={"detail": f"An error occurred while processing the request: {str(e)}"},
+            status_code=500,
+            headers={
+                "Access-Control-Allow-Origin": origin if origin in origins else origins[0],
+                "Access-Control-Allow-Credentials": "true",
+            },
+        )
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
