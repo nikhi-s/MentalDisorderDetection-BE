@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, Form, Depends, HTTPException, UploadFile, File
+from fastapi import FastAPI, Form, Depends, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 import replicate
 from replicate.exceptions import ReplicateError 
