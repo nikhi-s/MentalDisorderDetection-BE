@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Form, Depends, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 import traceback  # Add this import
 import replicate
 from replicate.exceptions import ReplicateError 
