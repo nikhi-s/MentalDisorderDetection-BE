@@ -144,7 +144,7 @@ async def options_handler(request: Request):
         },
     )
 
-app.post("/items/{item_id}")
+@app.post("/items/{item_id}")
 async def create_item(
     item_id: int, 
     text: str = Form(...), 
