@@ -140,7 +140,6 @@ async def options_handler(request: Request):
             "Access-Control-Allow-Origin": request.headers.get("Origin"),
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
-            "Access-Control-Allow-Credentials": "true",
         },
     )
 
@@ -212,6 +211,14 @@ async def log_requests(request: Request, call_next):
         logger.error(f"Error in middleware: {str(e)}")
         logger.error(traceback.format_exc())
         return JSONResponse(content={"message": "Internal Server Error"}, status_code=500)
+
+@app.get("/")
+async def root():
+    return HTMLResponse(content="<h1>Welcome to the Mental Disorder Detection API</h1>", status_code=200)
+
+@app.head("/")
+async def head_root():
+    return HTMLResponse(content="", status_code=200)
 
 if __name__ == "__main__":
     import uvicorn
