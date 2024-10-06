@@ -35,7 +35,7 @@ app = FastAPI()
 
 origins = [
     "https://mental-disorder-detection-frontend.onrender.com",
-    "http://localhost:5173",
+    "http://localhost:5173",  # Add this if you're testing locally
 ]
 
 app.add_middleware(
@@ -286,52 +286,87 @@ async def options_simple_post():
 def get_replicate_client():
     return replicate
 
-@app.post("/items/{item_id}", response_model=dict)
-async def create_item(item_id: int, text: str = Form(...), image: UploadFile = File(...), replicate_client: Optional[replicate] = Depends(get_replicate_client)):
-    
-    logger.info(f"Received POST request for item_id: {item_id}")    
-    logger.info(f"Text content: {text}")
-    logger.info(f"Image filename: {image.filename}")
-
-    if not text.strip():
-        logger.warning("Empty text received")
-        raise HTTPException(status_code=400, detail="Text input cannot be empty")
-    
-    if not image.filename:
-        logger.warning("No image file received")
-        raise HTTPException(status_code=400, detail="Image file is required")
-
+@app.post("/items/{item_id}")
+async def create_item(
+    item_id: int, 
+    text: str = Form(...), 
+    image: UploadFile = File(...), 
+    replicate_client: Optional[replicate] = Depends(get_replicate_client),
+    request: Request = None
+):
     try:
+        logger.info(f"Received POST request for item_id: {item_id}")
+        logger.info(f"Request headers: {request.headers if request else 'No request object'}")
+        logger.info(f"Text content: {text}")
+        logger.info(f"Image filename: {image.filename}")
+        
+        if not text.strip():
+            logger.warning("Empty text received")
+            raise HTTPException(status_code=400, detail="Text input cannot be empty")
+        
+        if not image.filename:
+            logger.warning("No image file received")
+            raise HTTPException(status_code=400, detail="Image file is required")
+
         if not replicate_client:
-            return {
+            result = {
                 "item_id": item_id,
                 "response_text": "Unable to process: Replicate API token not set",
                 "predictions": -1
             }
-        
-        # Process the image
-        image_content = await image.read()  # Read the uploaded file content
+        else:
+            # Process the image
+            image_content = await image.read()  # Read the uploaded file content
 
-        image_description = image_to_text(image_content)  # Get the text description of the image
-        logger.info(f"Image description: {image_description}")  # Log the image description
-        
-        model_generated_text, prediction = depr_fn_new(MIXTRAL_MODEL_NAME, text, image_description)
-        
-        logger.info(f"Prediction: {prediction}")
-        logger.info(f"Model generated response: {model_generated_text}")
-        
-        return {
-            "item_id": item_id,
-            "response_text": model_generated_text,
-            "predictions": prediction,
-            "image_description": image_description
-        }
+            image_description = image_to_text(image_content)  # Get the text description of the image
+            logger.info(f"Image description: {image_description}")  # Log the image description
+            
+            model_generated_text, prediction = depr_fn_new(MIXTRAL_MODEL_NAME, text, image_description)
+            
+            logger.info(f"Prediction: {prediction}")
+            logger.info(f"Model generated response: {model_generated_text}")
+            
+            result = {
+                "item_id": item_id,
+                "response_text": model_generated_text,
+                "predictions": prediction,
+                "image_description": image_description
+            }
+
+        origin = request.headers.get("Origin") if request else None
+        if origin in origins:
+            return JSONResponse(
+                content=result,
+                headers={
+                    "Access-Control-Allow-Origin": origin,
+                    "Access-Control-Allow-Credentials": "true",
+                },
+            )
+        else:
+            logger.warning(f"Received POST request from unauthorized origin: {origin}")
+            return JSONResponse(content={"message": "Unauthorized"}, status_code=403)
+
     except HTTPException as http_exc:
-        raise http_exc
+        logger.error(f"HTTP exception in create_item: {str(http_exc)}")
+        return JSONResponse(
+            content={"detail": str(http_exc.detail)},
+            status_code=http_exc.status_code,
+            headers={
+                "Access-Control-Allow-Origin": origin if origin in origins else origins[0],
+                "Access-Control-Allow-Credentials": "true",
+            },
+        )
     except Exception as e:
         logger.error(f"Error processing item {item_id}: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"An error occurred while processing the request: {str(e)}")
-    
+        return JSONResponse(
+            content={"detail": f"An error occurred while processing the request: {str(e)}"},
+            status_code=500,
+            headers={
+                "Access-Control-Allow-Origin": origin if origin in origins else origins[0],
+                "Access-Control-Allow-Credentials": "true",
+            },
+        )
+
 @app.get("/items/{item_id}", response_model=dict)
 async def get_item(item_id: int, text: str = Form(...), image: UploadFile = File(...), replicate_client: Optional[replicate] = Depends(get_replicate_client)):
 
