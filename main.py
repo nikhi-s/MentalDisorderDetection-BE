@@ -31,9 +31,14 @@ app = FastAPI()
     allow_headers=["*"],
 )'''
 
+origins = [
+    "https://mental-disorder-detection-frontend.onrender.com",
+    "http://localhost:5173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -210,28 +215,66 @@ app = FastAPI()
 async def root():
     return {"message": "Hello World"}
 
-@app.options("/simple-post")
-async def options_simple_post():
-    return JSONResponse(
-        content={"message": "OK"},
-        headers={
-            "Access-Control-Allow-Origin": "https://mental-disorder-detection-frontend.onrender.com",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Accept",
-            "Access-Control-Allow-Credentials": "true",
-        },
-    )
+@app.options("/{full_path:path}")
+async def options_handler(request: Request):
+    try:
+        logger.info(f"Received OPTIONS request for {request.url.path}")
+        origin = request.headers.get("Origin")
+        if origin in origins:
+            return JSONResponse(
+                content={"message": "OK"},
+                headers={
+                    "Access-Control-Allow-Origin": origin,
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization",
+                    "Access-Control-Allow-Credentials": "true",
+                },
+            )
+        else:
+            logger.warning(f"Received OPTIONS request from unauthorized origin: {origin}")
+            return JSONResponse(content={"message": "Unauthorized"}, status_code=403)
+    except Exception as e:
+        logger.error(f"Error in OPTIONS handler: {str(e)}")
+        logger.error(traceback.format_exc())
+        return JSONResponse(content={"message": "Internal Server Error"}, status_code=500)
 
 @app.post("/simple-post")
 async def simple_post(request: Request):
-    body = await request.json()
-    logger.info(f"Received simple POST request")
+    try:
+        logger.info("Received POST request for /simple-post")
+        logger.info(f"Request headers: {request.headers}")
+        body = await request.json()
+        logger.info(f"Request body: {body}")
+        origin = request.headers.get("Origin")
+        if origin in origins:
+            return JSONResponse(
+                content={"message": "Simple POST request successful", "received_data": body},
+                headers={
+                    "Access-Control-Allow-Origin": origin,
+                    "Access-Control-Allow-Credentials": "true",
+                },
+            )
+        else:
+            logger.warning(f"Received POST request from unauthorized origin: {origin}")
+            return JSONResponse(content={"message": "Unauthorized"}, status_code=403)
+    except Exception as e:
+        logger.error(f"Error in simple_post: {str(e)}")
+        logger.error(traceback.format_exc())
+        return JSONResponse(content={"message": "Internal Server Error"}, status_code=500)
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Received request: {request.method} {request.url}")
     logger.info(f"Request headers: {request.headers}")
-    logger.info(f"Request body: {body}")
-    response = JSONResponse(content={"message": "Simple POST request successful", "received_data": body})
-    response.headers["Access-Control-Allow-Origin"] = "https://mental-disorder-detection-frontend.onrender.com"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
-    return response
+    try:
+        response = await call_next(request)
+        logger.info(f"Response status: {response.status_code}")
+        logger.info(f"Response headers: {response.headers}")
+        return response
+    except Exception as e:
+        logger.error(f"Error in middleware: {str(e)}")
+        logger.error(traceback.format_exc())
+        return JSONResponse(content={"message": "Internal Server Error"}, status_code=500)
 
 # Add this to handle OPTIONS requests
 @app.options("/simple-post")
