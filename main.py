@@ -210,13 +210,28 @@ app = FastAPI()
 async def root():
     return {"message": "Hello World"}
 
+@app.options("/simple-post")
+async def options_simple_post():
+    return JSONResponse(
+        content={"message": "OK"},
+        headers={
+            "Access-Control-Allow-Origin": "https://mental-disorder-detection-frontend.onrender.com",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Accept",
+            "Access-Control-Allow-Credentials": "true",
+        },
+    )
+
 @app.post("/simple-post")
 async def simple_post(request: Request):
     body = await request.json()
     logger.info(f"Received simple POST request")
     logger.info(f"Request headers: {request.headers}")
     logger.info(f"Request body: {body}")
-    return {"message": "Simple POST request successful", "received_data": body}
+    response = JSONResponse(content={"message": "Simple POST request successful", "received_data": body})
+    response.headers["Access-Control-Allow-Origin"] = "https://mental-disorder-detection-frontend.onrender.com"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
 # Add this to handle OPTIONS requests
 @app.options("/simple-post")
