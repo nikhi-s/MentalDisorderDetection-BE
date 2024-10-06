@@ -202,13 +202,22 @@ app = FastAPI()
 async def root():
     return {"message": "Hello World"}
 
+@app.post("/simple-post")
+async def simple_post(request: Request):
+    body = await request.json()
+    logger.info(f"Received simple POST request")
+    logger.info(f"Request headers: {request.headers}")
+    logger.info(f"Request body: {body}")
+    return {"message": "Simple POST request successful", "received_data": body}
+
 def get_replicate_client():
     return replicate
 
 @app.post("/items/{item_id}", response_model=dict)
 async def create_item(item_id: int, text: str = Form(...), image: UploadFile = File(...), replicate_client: Optional[replicate] = Depends(get_replicate_client)):
     
-    logger.info(f"Received request for item_id: {item_id}")
+    logger.info(f"Received POST request for item_id: {item_id}")
+    logger.info(f"Request headers: {request.headers}")
     logger.info(f"Text content: {text}")
     logger.info(f"Image filename: {image.filename}")
 
