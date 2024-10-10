@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 MAX_NEW_TOKENS = 250
 LLAVA_MODEL_NAME = "yorickvp/llava-13b:80537f9eead1a5bfa72d5ac6ea6414379be41d4d4f6679fd776e9535d1eb58bb"  # Replace with the LLAVA model name
-MIXTRAL_MODEL_NAME = "mistralai/mixtral-8x7b-instruct-v0.1:7b3212fbaf88310cfef07a061ce94224e82efc8403c26fc67e8f6c065de51f21"
+#MIXTRAL_MODEL_NAME = "mistralai/mixtral-8x7b-instruct-v0.1:7b3212fbaf88310cfef07a061ce94224e82efc8403c26fc67e8f6c065de51f21"
+MIXTRAL_MODEL_NAME = "meta/meta-llama-3-70b-instruct:fbfb20b472b2f3bdd101412a9f70a0ed4fc0ced78a77ff00970ee7a2383c575d"
 REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 
 app = FastAPI()
